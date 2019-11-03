@@ -45,9 +45,10 @@ helper (x:xs) = "\'" ++ (fst x)++ "\'" ++ ":" ++ helper' (snd x) ++ if xs == [] 
 
 
 -- Parsing a String into a Json
-
+--newtype Parser a = P (String ->[(a,String)])
 json :: Parser Json
-json = undefined 
+json = undefined--P (\inp -> case inp of
+--           ('{':xs) -> [(Bracket[xs],xs)])
 
 -- hint: you will need to define lots of grammar components
 --       e.g., for recognizing JSON objects, arrays, etc.
@@ -60,19 +61,39 @@ json = undefined
 
 -- given a Json (object), return the list of keys at the top level
 listTopLevelKeys :: Json -> [String]
-listTopLevelKeys = undefined
+listTopLevelKeys (Bracket(xs))= fmap fst xs
 
 -- given a Json, return the list of all keys in the data structure
-listKeys :: Json -> [String]
-listKeys = undefined
 
+allpair :: Json -> [(String,Value)]
+allpair (Bracket[(a,J b)]) = [(a,J b)] ++ allpair b
+allpair (Bracket[(b,I c)]) = [(b,I c)]
+allpair (Bracket[(c,St d)]) = [(c,St d)]
+allpair (Bracket[(d,Array(J x:xs))]) = allpair x
+
+listKeys :: Json -> [String]
+listKeys (Bracket(xs)) = fmap fst xs ++ flat ((fmap helplistKeys (fmap snd xs)))
+
+flat :: [[String]] -> [String]
+flat (x:xs) = x ++ flat(xs)
+flat [] = []
+helplistKeys :: Value -> [String]
+helplistKeys (J(Bracket x)) = (listKeys (Bracket x))
+helplistKeys _ = []
 -- given a key and a Json, return the value
 -- return value is Maybe so that Nothing can indicate no such key exists
 -- (if Json contains duplicates of the key, then any of the corresponding
 -- values may be returned suffices)
-searchByKey :: String -> Json -> Maybe Json
-searchByKey = undefined
 
+ex = Bracket[("a",I 3)]
+ex1 = Bracket[("b",J ex)]
+ex2 = Bracket[("c",J ex1),("d",St "sadf")]
+--searchByKey :: String -> Json -> Maybe Json
+--searchByKey str (Bracket xs)= if (elem str listKeys (Bracket xs)) == False then Nothing else 
+
+--helpfind :: String -> Json -> Maybe Json
+--helpfind str (Bracket xs) = if (elem str (map fst xs)) then map 
+--helpfind str _ = 
 -- given a list of keys and a Json, return the list of values.
 -- for a given result, return Nothing if the key was missing
 maySearchAll :: [String] -> Json -> [Maybe Json]
@@ -86,7 +107,7 @@ mustSearchAll = undefined
 -- data type to be used below (DO NOT modify)
 data KeyOrIndex = Key String | Index Int
   deriving (Show,Eq)
-  
+
 -- given a list of object keys and array indexes denoting a path, return the value in a list of length 1 (indicates succcess)
 -- or empty list to indicate failure (path not found)
 searchPath :: [KeyOrIndex] -> Json -> [Json]
