@@ -8,7 +8,8 @@ data Json = Bracket[(Dictionary)]  {- define yourself -}
   deriving (Show, Eq)
 type Dictionary = (String,Value)
 --data Key = String deriving (Show,Eq)
-data Value = I Int | J Json | St String | Array[Value] deriving (Show,Eq)
+data Value = I Int | J Json | St String | Array[Value] deriving (Show, Eq)
+
 
 --test :: Json -> String
 --test (Bracket(x:xs)) = show x
@@ -47,7 +48,10 @@ helper (x:xs) = "\'" ++ (fst x)++ "\'" ++ ":" ++ helper' (snd x) ++ if xs == [] 
 -- Parsing a String into a Json
 --newtype Parser a = P (String ->[(a,String)])
 json :: Parser Json
-json = undefined--P (\inp -> case inp of
+json = do
+  result <- parseBracket
+  return result
+--P (\inp -> case inp of
 --           ('{':xs) -> [(Bracket[xs],xs)])
 
 -- hint: you will need to define lots of grammar components
@@ -56,6 +60,62 @@ json = undefined--P (\inp -> case inp of
 --       Since you control the implementation of Json data type
 --       try starting with a subset of JSON and build up gradually,
 --       testing your encode and decode
+
+
+--helper functions in Parser Json
+
+parseBracket :: Parser Json
+parseBracket = do
+  symbol "{"
+  dictionary <- parseDictionary
+  dictionaries <- many (do
+    symbol ","
+    parseDictionary)
+  symbol "}"
+  return (Bracket(dictionary:dictionaries))
+
+
+parseDictionary :: Parser Dictionary
+parseDictionary = do
+  key <- identifier
+  symbol ":"
+  value <- parseValue
+  return (key,value)
+
+
+parseValue :: Parser Value
+parseValue = do
+  value <- (many parseList)
+  if value /= []
+    then return (Array value)
+  else do
+    value <- (many parseBracket)
+    if value /= []
+      then return (Bracket value)
+    else do
+      value <- (many integer)
+      if value /= []
+        then return (I value)
+      else do
+        value <- (many identifier)
+        return (St value)
+
+
+
+
+parseList :: Parser [Value]
+parseList = do
+  symbol "["
+  n <- integer
+  ns <- many (do
+    symbol ","
+    integer)
+  symbol "]"
+  return (listToValue(n:ns))
+
+listToValue :: [Int] -> [Value]
+listToValue [] = []
+listToValue (x:xs) = ((I x):(listToValue xs))
 
 -- Querying a Json
 
@@ -89,11 +149,11 @@ ex = Bracket[("a",I 3)]
 ex1 = Bracket[("b",J ex)]
 ex2 = Bracket[("c",J ex1),("d",St "sadf")]
 --searchByKey :: String -> Json -> Maybe Json
---searchByKey str (Bracket xs)= if (elem str listKeys (Bracket xs)) == False then Nothing else 
+--searchByKey str (Bracket xs)= if (elem str listKeys (Bracket xs)) == False then Nothing else
 
 --helpfind :: String -> Json -> Maybe Json
---helpfind str (Bracket xs) = if (elem str (map fst xs)) then map 
---helpfind str _ = 
+--helpfind str (Bracket xs) = if (elem str (map fst xs)) then map
+--helpfind str _ =
 -- given a list of keys and a Json, return the list of values.
 -- for a given result, return Nothing if the key was missing
 maySearchAll :: [String] -> Json -> [Maybe Json]

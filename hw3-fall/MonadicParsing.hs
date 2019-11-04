@@ -104,7 +104,7 @@ string :: String -> Parser String
 string [] = return []
 string (x:xs) = do char x       -- cause to fail if next char is not x
                    string xs    -- cause to fail if next (n) chars are not xs
-                   return (x:xs) 
+                   return (x:xs)
 
 -- lower case letter followed by numbers or letters
 ident :: Parser String
@@ -154,3 +154,10 @@ integer = token int
 
 symbol :: String -> Parser String
 symbol xs = token (string xs)
+
+
+data Value = I Int | St String | Array[Value] deriving (Show, Eq)
+justplus :: Parser Value
+justplus = do
+  x <- identifier
+  return (St x)
