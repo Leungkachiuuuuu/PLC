@@ -8,7 +8,7 @@ data Json = Bracket[(Dictionary)]  {- define yourself -}
   deriving (Show, Eq)
 type Dictionary = (String,Value)
 --data Key = String deriving (Show,Eq)
-data Value = I Int | J Json | St String | Array[Value] deriving (Show, Eq)
+data Value = I Int | F Float | J Json | St String | Array[Value] deriving (Show, Eq)
 
 
 --test :: Json -> String
@@ -35,13 +35,14 @@ encode (Bracket(xs)) = "{" ++ helper xs ++"}"
 
 helper' :: Value -> String
 helper' (I a) = show a
-helper' (St a) = "\'" ++ a ++ "\'"
+helper' (F a) = show a
+helper' (St a) = "\"" ++ a ++ "\""
 helper' (J xs) = encode (xs)
 helper' (Array[]) = ""
 helper' (Array(xs)) = "[" ++ (init(foldr (\a b->a++","++b) ("") (fmap helper' xs))) ++ "]"
 
 helper :: [(String,Value)] -> String
-helper (x:xs) = "\'" ++ (fst x)++ "\'" ++ ":" ++ helper' (snd x) ++ if xs == [] then "" else "," ++ helper xs
+helper (x:xs) = "\"" ++ (fst x)++ "\"" ++ ":" ++ helper' (snd x) ++ if xs == [] then "" else "," ++ helper xs
 
 
 
@@ -77,7 +78,9 @@ parseBracket = do
 
 parseDictionary :: Parser Dictionary
 parseDictionary = do
+  symbol"\""
   key <- identifier
+  symbol"\""
   symbol ":"
   value <- parseValue
   return (key,value)
@@ -85,37 +88,62 @@ parseDictionary = do
 
 parseValue :: Parser Value
 parseValue = do
-  value <- (many parseList)
-  if value /= []
-    then return (Array value)
-  else do
-    value <- (many parseBracket)
-    if value /= []
-      then return (Bracket value)
-    else do
-      value <- (many integer)
-      if value /= []
-        then return (I value)
-      else do
-        value <- (many identifier)
-        return (St value)
+  parseList
+  <|>
+  parseJson
+  <|>
+  parseInt
+  <|>
+  parseString
 
+parseInt :: Parser Value
+parseInt = do
+  int <- integer
+  return (I int)
 
+parseString :: Parser Value
+parseString = do
+  symbol "\""
+  string <- takeString
+  symbol "\""
+  return (St string)
 
+parseFloat :: Parser Value
+parseFloat = do
+  x <- digits
+  y <- symbol "."
+  z <- digits
+  return (F (read (x++y++z) :: Float))
 
-parseList :: Parser [Value]
+parseJson :: Parser Value
+parseJson = do
+  json <- parseBracket
+  return (J json)
+
+chars :: Parser String
+chars= do
+  x <- alphanum
+  xs <- many alphanum
+  return (x:xs)
+
+digits :: Parser String
+digits = do
+  x <- digit
+  xs <- many digit
+  return (x:xs)
+
+takeString :: Parser String
+takeString = token chars
+
+parseList :: Parser Value
 parseList = do
   symbol "["
-  n <- integer
+  n <- parseValue
   ns <- many (do
     symbol ","
-    integer)
+    parseValue)
   symbol "]"
-  return (listToValue(n:ns))
-
-listToValue :: [Int] -> [Value]
-listToValue [] = []
-listToValue (x:xs) = ((I x):(listToValue xs))
+  return (Array(n:ns))
 
 -- Querying a Json
 
