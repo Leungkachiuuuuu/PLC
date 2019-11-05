@@ -4,7 +4,7 @@ import MonadicParsing
 import StateTransformer
 import Control.Applicative
 
-data Json = Bracket[(Dictionary)]  {- define yourself -}
+data Json = Bracket[(Dictionary)] | V Value {- define yourself -}
   deriving (Show, Eq)
 type Dictionary = (String,Value)
 --data Key = String deriving (Show,Eq)
@@ -150,24 +150,30 @@ parseList = do
 -- given a Json (object), return the list of keys at the top level
 listTopLevelKeys :: Json -> [String]
 listTopLevelKeys (Bracket(xs))= fmap fst xs
-
+listTopLevelKeys _ = []
 -- given a Json, return the list of all keys in the data structure
 
 allpair :: Json -> [(String,Value)]
-allpair (Bracket[(a,J b)]) = [(a,J b)] ++ allpair b
+allpair (Bracket((a,J b):xs)) = [(a,J b)] ++ allpair b ++ allpair (Bracket(xs))
 allpair (Bracket[(b,I c)]) = [(b,I c)]
 allpair (Bracket[(c,St d)]) = [(c,St d)]
-allpair (Bracket[(d,Array(J x:xs))]) = allpair x
+allpair (Bracket((d,Array(xs)):xd)) = helpfindpair xs ++ allpair (Bracket(xd))
+allpair (Bracket[]) = []
+
+helpfindpair :: [Value] -> [(String,Value)]
+helpfindpair ((J b):xs)= allpair b ++ helpfindpair xs
+helpfindpair [] = []
 
 listKeys :: Json -> [String]
-listKeys (Bracket(xs)) = fmap fst xs ++ flat ((fmap helplistKeys (fmap snd xs)))
-
+listKeys json = fmap fst (allpair json)
+{-
 flat :: [[String]] -> [String]
 flat (x:xs) = x ++ flat(xs)
 flat [] = []
 helplistKeys :: Value -> [String]
 helplistKeys (J(Bracket x)) = (listKeys (Bracket x))
 helplistKeys _ = []
+--}
 -- given a key and a Json, return the value
 -- return value is Maybe so that Nothing can indicate no such key exists
 -- (if Json contains duplicates of the key, then any of the corresponding
@@ -176,21 +182,30 @@ helplistKeys _ = []
 ex = Bracket[("a",I 3)]
 ex1 = Bracket[("b",J ex)]
 ex2 = Bracket[("c",J ex1),("d",St "sadf")]
---searchByKey :: String -> Json -> Maybe Json
---searchByKey str (Bracket xs)= if (elem str listKeys (Bracket xs)) == False then Nothing else
+
+searchByKey :: String -> Json -> Maybe Json
+searchByKey str json = if (elem str (listKeys json) == False) then Nothing else Just (V (snd (head(filter (\x -> (fst x)==str ) (allpair json)))))
 
 --helpfind :: String -> Json -> Maybe Json
 --helpfind str (Bracket xs) = if (elem str (map fst xs)) then map
 --helpfind str _ =
 -- given a list of keys and a Json, return the list of values.
 -- for a given result, return Nothing if the key was missing
-maySearchAll :: [String] -> Json -> [Maybe Json]
-maySearchAll = undefined
 
+maySearchAll :: [String] -> Json -> [Maybe Json]
+maySearchAll (str) json = if length (filter (\x-> x /= Nothing) output) /= 0 then filter (\x->x/= Nothing) output else [Nothing] where output = helper_maysearch (str) json
+
+helper_maysearch :: [String] -> Json -> [Maybe Json]
+helper_maysearch (s:str) json = if (elem s (listKeys json) ==False) then [Nothing]
+  else map Just (map (V) (map snd (filter (\x-> (fst x) == s) (allpair json)))) ++ helper_maysearch str json
+helper_maysearch [] _ = []
 -- given a list of keys and a Json, return the list of values
 -- return Nothing if any one of the keys is missing
 mustSearchAll :: [String] -> Json -> Maybe [Json]
-mustSearchAll = undefined
+mustSearchAll (str) json= if elem Nothing output then Nothing else Just (map (takeoff) output) where output = helper_maysearch str json
+--mustSearchAll = undefined
+takeoff :: Maybe Json -> Json
+takeoff (Just x) = x
 
 -- data type to be used below (DO NOT modify)
 data KeyOrIndex = Key String | Index Int
@@ -198,8 +213,20 @@ data KeyOrIndex = Key String | Index Int
 
 -- given a list of object keys and array indexes denoting a path, return the value in a list of length 1 (indicates succcess)
 -- or empty list to indicate failure (path not found)
+getpair :: Json -> [(String,Value)]
+getpair (Bracket[x]) = [x]
+getpair (V(J (Bracket[x]))) = [x]
 searchPath :: [KeyOrIndex] -> Json -> [Json]
-searchPath = undefined
+searchPath xs json = if (elem Nothing (helppath xs json)) then [] else map takeoff (helppath xs json)
+
+helppath :: [KeyOrIndex] -> Json -> [Maybe Json]
+helppath ((Key x):xs) json= if elem x (listkeyinlayer json) == True then [Just (output)] ++ (helppath xs output) else [Nothing] where output = (V(snd (head (filter (\y->fst y == x) (getpair json) ))))
+helppath ((Index x):xs) json= if length(listkeyinlayer json) <= x+1 then [Just (output)] ++ (helppath xs output) else [Nothing] where output = (V(snd (((getpair json)!! x))))
+helppath [] json = []
+
+listkeyinlayer :: Json -> [(String)]
+listkeyinlayer (Bracket(xs)) = map fst xs
+listkeyinlayer (V(J (Bracket(xs)))) = map fst xs
 
 {- Given a Json that may have duplicate keys,
 return a Json where the keys are de-duplicated by renaming.
@@ -212,7 +239,7 @@ DO NOT modify: instead, see label below
 makeKeysUnique :: Json -> Json
 makeKeysUnique j = fst (app (label j) 0)
 
-{- helper function to be used in your implementation of
+{- helper function to be used in your implementation ofex
 label -}
 fresh :: ST Int
 fresh = S (\n -> (n, n+1))
