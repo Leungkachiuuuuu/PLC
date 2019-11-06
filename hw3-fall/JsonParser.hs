@@ -227,7 +227,7 @@ helppath [] json = []
 listkeyinlayer :: Json -> [(String)]
 listkeyinlayer (Bracket(xs)) = map fst xs
 listkeyinlayer (V(J (Bracket(xs)))) = map fst xs
-
+listkeyinlayer _ = []
 {- Given a Json that may have duplicate keys,
 return a Json where the keys are de-duplicated by renaming.
 If the Json has keys "a", "b", "a", "c", "c" you should rename
