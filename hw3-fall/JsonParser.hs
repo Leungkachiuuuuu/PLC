@@ -157,23 +157,18 @@ allpair :: Json -> [(String,Value)]
 allpair (Bracket((a,J b):xs)) = [(a,J b)] ++ allpair b ++ allpair (Bracket(xs))
 allpair (Bracket[(b,I c)]) = [(b,I c)]
 allpair (Bracket[(c,St d)]) = [(c,St d)]
-allpair (Bracket((d,Array(xs)):xd)) = helpfindpair xs ++ allpair (Bracket(xd))
+allpair (Bracket((d,Array(xs)):xd)) = [(d,(Array(xs)))] ++ helpfindpair xs ++ allpair (Bracket(xd))
+allpair (Bracket[(a,F f)]) = [(a,F f)]
 allpair (Bracket[]) = []
 
 helpfindpair :: [Value] -> [(String,Value)]
 helpfindpair ((J b):xs)= allpair b ++ helpfindpair xs
+--helpfindpair (I c) = [()]
+helpfindpair ((_):xs) = helpfindpair xs
 helpfindpair [] = []
 
 listKeys :: Json -> [String]
 listKeys json = fmap fst (allpair json)
-{-
-flat :: [[String]] -> [String]
-flat (x:xs) = x ++ flat(xs)
-flat [] = []
-helplistKeys :: Value -> [String]
-helplistKeys (J(Bracket x)) = (listKeys (Bracket x))
-helplistKeys _ = []
---}
 -- given a key and a Json, return the value
 -- return value is Maybe so that Nothing can indicate no such key exists
 -- (if Json contains duplicates of the key, then any of the corresponding
@@ -182,9 +177,12 @@ helplistKeys _ = []
 ex = Bracket[("a",I 3)]
 ex1 = Bracket[("b",J ex)]
 ex2 = Bracket[("c",J ex1),("d",St "sadf")]
-
+ex9 = Bracket[("z",J (Bracket[("zz",Array[I 9,J (Bracket[("zzz", I 9)])])])) ]
+ex10 = Bracket[("z",Array [I 9,J (Bracket[("zz",I 10)])])]
+ex11 = Bracket[("z",Array[I 9])]
+       
 searchByKey :: String -> Json -> Maybe Json
-searchByKey str json = if (elem str (listKeys json) == False) then Nothing else Just (V (snd (head(filter (\x -> (fst x)==str ) (allpair json)))))
+searchByKey str json = if (elem str (map fst (allpair json)) == False) then Nothing else Just (V (snd (head(filter (\x -> (fst x)==str ) (allpair json)))))
 
 --helpfind :: String -> Json -> Maybe Json
 --helpfind str (Bracket xs) = if (elem str (map fst xs)) then map
