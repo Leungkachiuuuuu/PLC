@@ -146,7 +146,7 @@ parseList = do
   return (Array(n:ns))
 
 -- Querying a Json
-
+ex4 = Bracket[("z",I 9),("zz",I 10)]
 -- given a Json (object), return the list of keys at the top level
 listTopLevelKeys :: Json -> [String]
 listTopLevelKeys (Bracket(xs))= fmap fst xs
@@ -155,10 +155,9 @@ listTopLevelKeys _ = []
 
 allpair :: Json -> [(String,Value)]
 allpair (Bracket((a,J b):xs)) = [(a,J b)] ++ allpair b ++ allpair (Bracket(xs))
-allpair (Bracket[(b,I c)]) = [(b,I c)]
-allpair (Bracket[(c,St d)]) = [(c,St d)]
 allpair (Bracket((d,Array(xs)):xd)) = [(d,(Array(xs)))] ++ helpfindpair xs ++ allpair (Bracket(xd))
-allpair (Bracket[(a,F f)]) = [(a,F f)]
+allpair (Bracket(x:xs)) = [x] ++ allpair (Bracket(xs))
+
 allpair (Bracket[]) = []
 
 helpfindpair :: [Value] -> [(String,Value)]
@@ -178,10 +177,7 @@ listKeys json = fmap fst (allpair json)
 ex = Bracket[("a",I 3)]
 ex1 = Bracket[("b",J ex)]
 ex2 = Bracket[("c",J ex1),("d",St "sadf")]
-ex9 = Bracket[("z",J (Bracket[("zz",Array[I 9,J (Bracket[("zzz", I 9)])])])) ]
-ex10 = Bracket[("z",Array [I 9,J (Bracket[("zz",I 10)])])]
-ex11 = Bracket[("z",Array[I 9])]
-ex3 = Bracket[("z",Array[I 9,Array [St"zz",I 10,J (Bracket[("zzz",I 1)])]])]
+
 searchByKey :: String -> Json -> Maybe Json
 searchByKey str json = if (elem str (map fst (allpair json)) == False) then Nothing else Just (V (snd (head(filter (\x -> (fst x)==str ) (allpair json)))))
 
