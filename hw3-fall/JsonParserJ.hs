@@ -222,7 +222,7 @@ mustSearchAll = undefined
 -- data type to be used below (DO NOT modify)
 data KeyOrIndex = Key String | Index Int
   deriving (Show,Eq)
-  
+
 -- given a list of object keys and array indexes denoting a path, return the value in a list of length 1 (indicates succcess)
 -- or empty list to indicate failure (path not found)
 searchPath :: [KeyOrIndex] -> Json -> [Json]
@@ -268,5 +268,5 @@ listLabel (x:xs) = pure (\ys y -> y++ys) <*> listLabel xs <*> listLabel [x]
 {-listLabel = undefined-}
 
 
-md = Brackets [("a", Str "hello"), ("b", Array [JN (Brackets [("c", Str "Bye")])])]
+md = Brackets [("a", Val 1), ("b", Array [JN (Brackets [("c", Str "Bye")])])]
 md' = Brackets [("a", Str "hello"), ("b", Array [Array [JN (Brackets [("c", Str "Bye")])]])]
