@@ -4,7 +4,7 @@ import MonadicParsing
 import StateTransformer
 import Control.Applicative
 
-data Json = Bracket[(Dictionary)]  {- define yourself -}
+data Json = Bracket[Dictionary] | Val Value  {- define yourself -}
   deriving (Show, Eq)
 type Dictionary = (String,Value)
 --data Key = String deriving (Show,Eq)
@@ -222,4 +222,19 @@ fresh = S (\n -> (n, n+1))
 example in Ch 12.3 or list labeling from lecture 14 as your inspiration (alabel or mlabel).
 -}
 label :: Json -> ST Json
-label = undefined
+label (Bracket xs) = pure (Bracket) <*> listlabel xs
+
+listlabel :: [Dictionary] -> ST [Dictionary]
+listlabel (x:[]) = pure(\k -> [k]) <*> jlabel x
+listlabel (x:xs) = pure(\ys y -> y:ys) <*> listlabel xs <*> jlabel x
+
+jlabel :: Dictionary -> ST Dictionary
+jlabel (key, Array((J x): xs))= pure (\n val -> (key++(show n), val)) <*> fresh <*> (pure(Array) <*> arraylabel ((J x):xs))
+jlabel (key, J (Bracket xs)) = pure (\n val -> (key++(show n), val)) <*> fresh <*> (pure (J) <*> label (Bracket xs))
+jlabel (key, value) = pure (\n val -> (key++(show n), val)) <*> fresh <*> pure(value)
+
+arraylabel :: [Value] -> ST [Value]
+arraylabel ((J x):[]) = pure(\k -> [k]) <*> (pure(J) <*> label x)
+arraylabel ((J x):xs) = pure(\ys y -> y:ys) <*> arraylabel xs <*> (pure(J) <*> label x)
+
+  --fmap Leaf(pure(\n -> x++(show n)) <*> fresh)
