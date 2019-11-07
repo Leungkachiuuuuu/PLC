@@ -164,6 +164,7 @@ allpair (Bracket[]) = []
 helpfindpair :: [Value] -> [(String,Value)]
 helpfindpair ((J b):xs)= allpair b ++ helpfindpair xs
 --helpfindpair (I c) = [()]
+helpfindpair ((Array(xs):xd)) = helpfindpair xs ++ helpfindpair xd
 helpfindpair ((_):xs) = helpfindpair xs
 helpfindpair [] = []
 
@@ -180,7 +181,7 @@ ex2 = Bracket[("c",J ex1),("d",St "sadf")]
 ex9 = Bracket[("z",J (Bracket[("zz",Array[I 9,J (Bracket[("zzz", I 9)])])])) ]
 ex10 = Bracket[("z",Array [I 9,J (Bracket[("zz",I 10)])])]
 ex11 = Bracket[("z",Array[I 9])]
-       
+ex3 = Bracket[("z",Array[I 9,Array [St"zz",I 10,J (Bracket[("zzz",I 1)])]])]
 searchByKey :: String -> Json -> Maybe Json
 searchByKey str json = if (elem str (map fst (allpair json)) == False) then Nothing else Just (V (snd (head(filter (\x -> (fst x)==str ) (allpair json)))))
 
