@@ -33,6 +33,7 @@ decode s = let res = parse json s in
 --       works by constructing example Jsons your self
 encode :: Json -> String
 encode (Bracket(xs)) = "{" ++ helper xs ++"}"
+encode (Val value) = helper' value
 
 helper' :: Value -> String
 helper' (I a) = show a
@@ -224,14 +225,14 @@ data KeyOrIndex = Key String | Index Int
   -- given a list of object keys and array indexes denoting a path, return the value in a list of length 1 (indicates succcess)
   -- or empty list to indicate failure (path not found)
 getpair :: Json -> [(String,Value)]
-getpair (Bracket[x]) = [x]
-getpair (Val (J (Bracket[x]))) = [x]
+getpair (Bracket(xs)) = xs
+getpair (Val (J (Bracket(xs)))) = xs
 searchPath :: [KeyOrIndex] -> Json -> [Json]
 searchPath xs json = if (elem Nothing (helppath xs json)) then [] else map takeoff (helppath xs json)
 
 helppath :: [KeyOrIndex] -> Json -> [Maybe Json]
 helppath ((Key x):xs) json= if elem x (listkeyinlayer json) == True then [Just (output)] ++ (helppath xs output) else [Nothing] where output = (Val (snd (head (filter (\y->fst y == x) (getpair json) ))))
-helppath ((Index x):xs) json= if length(listkeyinlayer json) <= x+1 then [Just (output)] ++ (helppath xs output) else [Nothing] where output = (Val (snd (((getpair json)!! x))))
+helppath ((Index x):xs) json= if length(listkeyinlayer json) >= x+1 then [Just (output)] ++ (helppath xs output) else [Nothing] where output = (Val (snd (((getpair json)!! x))))
 helppath [] json = []
 
 listkeyinlayer :: Json -> [(String)]
