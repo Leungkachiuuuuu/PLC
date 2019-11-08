@@ -127,10 +127,8 @@ parseFalse = do
 
 parseNull :: Parser Value
 parseNull = do
-  nullv <- symbol "Null"
-  case nullv of
-    [] ->return []
-    _ -> return Null
+  nullv <- symbol "null"
+  return(Null)
 
 parseString :: Parser Value
 parseString = do
