@@ -79,6 +79,7 @@ parseBracket = do
   return (Bracket(dictionary:dictionaries))
 
 
+
 parseDictionary :: Parser Dictionary
 parseDictionary = do
   symbol"\""
@@ -117,17 +118,17 @@ parseBool = do
 parseTrue :: Parser Value
 parseTrue = do
   bool <- symbol "true"
-  return (B (read bool))
+  return (B (True))
 
 parseFalse :: Parser Value
 parseFalse = do
   bool <- symbol "false"
-  return (B (read bool))
+  return (B (False))
 
 
 parseNull :: Parser Value
 parseNull = do
-  nullv <- symbol "null"
+  nullv <- symbol "Null"
   return(Null)
 
 parseString :: Parser Value
@@ -182,7 +183,8 @@ parseList = do
   return (Array(n:ns))
 
 -- Querying a Json
-
+ex6 = Bracket[("a",Null)]
+ex5 = Bracket[("a",B True),("b",I 3)]
 ex4 = Bracket[("z",I 9),("zz",I 10)]
 -- given a Json (object), return the list of keys at the top level
 listTopLevelKeys :: Json -> [String]
@@ -294,3 +296,4 @@ arraylabel ((Array array):[]) = pure (\k -> [k]) <*> (pure Array <*> (arraylabel
 arraylabel (x:[]) = pure (\k -> [k]) <*> pure (x)
 arraylabel (x:xs) = pure (\ys y -> y++ys) <*> arraylabel xs <*> arraylabel [x]
   --fmap Leaf(pure(\n -> x++(show n)) <*> fresh)
+
