@@ -32,7 +32,6 @@ decode s = let res = parse json s in
 --       You should be able to test this before your Parser even
 --       works by constructing example Jsons your self
 encode :: Json -> String
-encode (Val x) = helper' x
 encode (Bracket(xs)) = "{" ++ helper xs ++"}"
 encode (Val value) = helper' value
 
@@ -300,4 +299,3 @@ arraylabel ((Array array):[]) = pure (\k -> [k]) <*> (pure Array <*> (arraylabel
 arraylabel (x:[]) = pure (\k -> [k]) <*> pure (x)
 arraylabel (x:xs) = pure (\ys y -> y++ys) <*> arraylabel xs <*> arraylabel [x]
   --fmap Leaf(pure(\n -> x++(show n)) <*> fresh)
-
