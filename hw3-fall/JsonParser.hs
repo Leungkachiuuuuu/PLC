@@ -34,6 +34,7 @@ decode s = let res = parse json s in
 encode :: Json -> String
 encode (Val x) = helper' x
 encode (Bracket(xs)) = "{" ++ helper xs ++"}"
+encode (Val value) = helper' value
 
 helper' :: Value -> String
 helper' (I a) = show a
@@ -78,6 +79,7 @@ parseBracket = do
     parseDictionary)
   symbol "}"
   return (Bracket(dictionary:dictionaries))
+
 
 
 parseDictionary :: Parser Dictionary
@@ -130,7 +132,7 @@ parseFalse = do
 
 parseNull :: Parser Value
 parseNull = do
-  nullv <- symbol "null"
+  nullv <- symbol "Null"
   return(Null)
 
 parseString :: Parser Value
@@ -185,7 +187,8 @@ parseList = do
   return (Array(n:ns))
 
 -- Querying a Json
-
+ex6 = Bracket[("a",Null)]
+ex5 = Bracket[("a",B True),("b",I 3)]
 ex4 = Bracket[("z",I 9),("zz",I 10)]
 -- given a Json (object), return the list of keys at the top level
 listTopLevelKeys :: Json -> [String]
@@ -225,14 +228,14 @@ data KeyOrIndex = Key String | Index Int
   -- given a list of object keys and array indexes denoting a path, return the value in a list of length 1 (indicates succcess)
   -- or empty list to indicate failure (path not found)
 getpair :: Json -> [(String,Value)]
-getpair (Bracket[x]) = [x]
-getpair (Val (J (Bracket[x]))) = [x]
+getpair (Bracket(xs)) = xs
+getpair (Val (J (Bracket(xs)))) = xs
 searchPath :: [KeyOrIndex] -> Json -> [Json]
 searchPath xs json = if (elem Nothing (helppath xs json)) then [] else map takeoff (helppath xs json)
 
 helppath :: [KeyOrIndex] -> Json -> [Maybe Json]
 helppath ((Key x):xs) json= if elem x (listkeyinlayer json) == True then [Just (output)] ++ (helppath xs output) else [Nothing] where output = (Val (snd (head (filter (\y->fst y == x) (getpair json) ))))
-helppath ((Index x):xs) json= if length(listkeyinlayer json) <= x+1 then [Just (output)] ++ (helppath xs output) else [Nothing] where output = (Val (snd (((getpair json)!! x))))
+helppath ((Index x):xs) json= if length(listkeyinlayer json) >= x+1 then [Just (output)] ++ (helppath xs output) else [Nothing] where output = (Val (snd (((getpair json)!! x))))
 helppath [] json = []
 
 listkeyinlayer :: Json -> [(String)]
@@ -297,3 +300,4 @@ arraylabel ((Array array):[]) = pure (\k -> [k]) <*> (pure Array <*> (arraylabel
 arraylabel (x:[]) = pure (\k -> [k]) <*> pure (x)
 arraylabel (x:xs) = pure (\ys y -> y++ys) <*> arraylabel xs <*> arraylabel [x]
   --fmap Leaf(pure(\n -> x++(show n)) <*> fresh)
+
