@@ -32,6 +32,7 @@ decode s = let res = parse json s in
 --       You should be able to test this before your Parser even
 --       works by constructing example Jsons your self
 encode :: Json -> String
+encode (Val x) = helper' x
 encode (Bracket(xs)) = "{" ++ helper xs ++"}"
 
 helper' :: Value -> String
@@ -82,7 +83,7 @@ parseBracket = do
 parseDictionary :: Parser Dictionary
 parseDictionary = do
   symbol"\""
-  key <- identifier
+  key <- inotQuote
   symbol"\""
   symbol ":"
   value <- parseValue
@@ -98,6 +99,8 @@ parseValue = do
   parseInt
   <|>
   parseString
+  <|>
+  parseFloat
   <|>
   parseBool
   <|>
@@ -117,12 +120,12 @@ parseBool = do
 parseTrue :: Parser Value
 parseTrue = do
   bool <- symbol "true"
-  return (B (read bool))
+  return (B (True))
 
 parseFalse :: Parser Value
 parseFalse = do
   bool <- symbol "false"
-  return (B (read bool))
+  return (B (False))
 
 
 parseNull :: Parser Value
@@ -133,7 +136,7 @@ parseNull = do
 parseString :: Parser Value
 parseString = do
   symbol "\""
-  string <- takeString
+  string <- inotQuote
   symbol "\""
   return (St string)
 
